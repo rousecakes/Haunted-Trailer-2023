@@ -53,7 +53,7 @@ void loop() {
   if (spitFlag == 1) {                   // Check to see if Camel should be Spitting
   spit();                                // ... If so, Run Spit Routine
   } else {                               // ... Otherwise ...
-    digitalWrite(spit_Motor, LOW);       // ... Don't Spit
+    digitalWrite(spit_Motor, LOW);       // ... Don't Spit (Turn off Spit Motor)
   }
 } 
 
@@ -64,12 +64,16 @@ void headMove() {
 
   if ((currentTime - lastTime_HeadMove) >= Duration_headMove[randomNumber_headDuration]) {   // Check to See if the Duration of Time the Head should stay in one place has passed
     stepperHead.moveTo(Positions_headMove[randomNumber_headPosition]);                       // Set Stepper Position to New Position
-    if (stepperHead.distanceToGo() != 0) {                                                   // If Head is not at new position...
-      stepperHead.run();                                                                     // ... advance the stepper a step 
-    } else {
-      randomNumber_headDuration = random(0, 3);                                              // Set New Random Number Head Duration
-      randomNumber_headPosition = random(0,5);                                               // Set New Random Number Head Position
-      lastTime_HeadMove = currentTime;                                                       // Reset Interval Clock
+    if (spitState == true){                                                                  // If currently Spitting...
+      return;                                                                                // ...Skip Movements and return to Main Loop Program...
+    } else{                                                                                  // ...Otherwise...
+        if (stepperHead.distanceToGo() != 0) {                                               // If Head is not at new position...
+          stepperHead.run();                                                                 // ... advance the stepper a step.
+        } else {                                                                              // If Stepper has reach Target Destination and...
+          randomNumber_headDuration = random(3);                                             // Set New Random Number Head Duration
+          randomNumber_headPosition = random(5);                                             // Set New Random Number Head Position
+          lastTime_HeadMove = currentTime;                                                   // Reset Interval Clock
+        }
     } 
   }  
 }
@@ -84,7 +88,7 @@ void spit() {
     if (spitState == false) {                                                                // If Spit motor off (not spitting)...
       digitalWrite(spit_Motor, HIGH);                                                        // ...Turn Spit motor on (start spitting)
       spitState = true;                                                                      // Turn on Spit Flag
-      randomNumber_spitDuration = random(0, 3);                                              // Pick New Random Duration Camel should spit for
+      randomNumber_spitDuration = random(3);                                                 // Pick New Random Duration Camel should spit for
       lastTime_spitDuration = currentTime;                                                   // Reset Spit Duration Timer to start tracking Spit Duration
     }
   }
@@ -92,7 +96,7 @@ void spit() {
     if (spitState == true) {                                                                 // If Spit Flag is on (still Spitting)...
       digitalWrite(spit_Motor, LOW);                                                         // ...Turn off Spit Motor
       spitState = false;                                                                     // Turn off Spit Flag
-      randomNumber_spitInterval = random(0, 3);                                              // Pick New Random Interval to Wait for Next Spit Cycle
+      randomNumber_spitInterval = random(3);                                                 // Pick New Random Interval to Wait for Next Spit Cycle
       lastTime_spit = currentTime;                                                           // Reset Spit Interval Timer to start tracking When to Spit Again
     }
   }
