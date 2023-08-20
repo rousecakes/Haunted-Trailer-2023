@@ -22,8 +22,8 @@ const unsigned long Duration_headMove[3] = { 1000, 2500, 4000 };          // Dur
 const unsigned long Interval_spit[3] = { 3000, 6000, 9000 };              // Interval Array of time to set random numbers for camel Spit ** Lowest Number Must be Larger then Largest number in "Duration_spit" Array 
 const unsigned long Duration_spit[3] = { 500, 1000, 1750 };               // Duration Array for Spit Time (Seconds)
 
-volatile bool spitFlag;                                                   // Flag for Spit routine
-volatile bool spitState;                                                  // Variable to turn off and on Spit Motor
+volatile bool spitFlag = true;                                            // Flag for Spit routine
+volatile bool spitState = false;                                          // Variable to turn off and on Spit Motor
 
 /* Function ProtoTypes */
 void Homing();
@@ -55,6 +55,7 @@ void loop() {
   } else {                               // ... Otherwise ...
     digitalWrite(spit_Motor, LOW);       // ... Don't Spit (Turn off Spit Motor)
   }
+  Serial.println(spitFlag);
 } 
 
 void headMove() {
@@ -85,7 +86,7 @@ void spit() {
   static unsigned long randomNumber_spitDuration;                 // Variable to hold random number for Spit Duration 
 
   if ((currentTime - lastTime_spit) >= Interval_spit[randomNumber_spitInterval]) {           // Check to See if the Duration of Time has Passed in order to Spit Again
-    if (spitState == false) {                                                                // If Spit motor off (not spitting)...
+    if ((spitState == false) && (stepperHead.distanceToGo() == 0)) {                         // If Spit motor off (not spitting)... And Stepper is at Destination...
       digitalWrite(spit_Motor, HIGH);                                                        // ...Turn Spit motor on (start spitting)
       spitState = true;                                                                      // Turn on Spit Flag
       randomNumber_spitDuration = random(3);                                                 // Pick New Random Duration Camel should spit for
@@ -103,8 +104,14 @@ void spit() {
 }
 
 void ISR_Spit() {
-  spitFlag = !spitFlag;           // Toggle the Spit Flag - Turn on or Turn off the Spit Function
-  spitState = false;              // Reset the Spit State to restart the cycle
+  static unsigned long lastTime_Interrupt = 0;              // Variable to hold Last time action happened 
+  unsigned long interruptTime = millis();                   // Update Current interrupt Time
+
+  if ((interruptTime - lastTime_Interrupt) > 300) {         // If Debounce Time has passed....
+    spitFlag = !spitFlag;                                   // ...Toggle the Spit Flag - Turn on or Turn off the Spit Function...
+    spitState = false;                                      // ...Reset the Spit State to restart the cycle      
+  }
+  lastTime_Interrupt = interruptTime;                       // Update last Interrupt Time.
 }
 
 void Homing() {
